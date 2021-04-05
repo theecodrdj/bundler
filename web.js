@@ -32,6 +32,6 @@ document.addEventListener("DOMContentLoaded", function () {
     setTimeout(() => {
       console.log("hydrate");
       hydrate(React.createElement(App), el);
-    }, 1000);
+    }, 0);
   }
 });

@@ -6,9 +6,12 @@ const { http } = require("./plugins");
 
 const TEMPLATES = {};
 
-TEMPLATES["index.html"] = `
+TEMPLATES["index.html"] = `<!doctype html>
 <html>
-  <head></head>
+  <head>
+    <style>body {margin: 0}</style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
   <body>
     <script src="./web.js"></script>
     <div id="main"></div>
@@ -27,8 +30,14 @@ async function buildScript(moduleUrl, outPath, minify = false) {
     bundle: true,
     outfile: outPath,
     plugins: [http],
-    define: { "process.env.MODULE_URL": JSON.stringify(moduleUrl) },
+    define: {
+      "process.env.NODE_ENV": JSON.stringify(
+        minify ? "production" : "development"
+      ),
+      "process.env.MODULE_URL": JSON.stringify(moduleUrl),
+    },
     minify,
+    treeShaking: minify,
   });
 }
 
@@ -37,19 +46,22 @@ async function buildHtml(url) {
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto(url);
-  console.log("page loaded");
-  await page.screenshot({ path: join(buildPath, "site.png") });
-  const html = await page.evaluate(() => window.__export());
+  console.log("Page loaded...");
+  // await page.screenshot({ path: join(buildPath, "site.png") });
+  const html = await page.evaluate(() => {
+    console.log(window.__export);
+    return window.__export();
+  });
   await browser.close();
   return html;
 }
 
-async function build(moduleUrl) {
+async function build(moduleUrl, minify = false) {
   // Clean out the old build folder if it's there
   fs.rmdirSync(buildPath, { recursive: true });
 
   // Build the main js using esbuild and bundle in a single script
-  await buildScript(moduleUrl, join(buildPath, "web.js"));
+  await buildScript(moduleUrl, join(buildPath, "web.js"), minify);
 
   // Make sure we at least have an index.html template that we can use (or tweak)
   if (!fs.existsSync(indexHtmlTemplatePath)) {
@@ -64,14 +76,20 @@ async function build(moduleUrl) {
 
   // Replace the empty div in the hmtl file with the static html content
   const regex = /(<div id=.main.>)(.*)(<\/div>)/is;
-
-  fs.writeFileSync(
-    indexHtmlBuildPath,
-    indexHtml.replace(regex, `<div id="main">${html}</div>`)
+  const indexHtmlWithSSR = indexHtml.replace(
+    regex,
+    `<div id="main">${html}</div>`
   );
+
+  if (!html || indexHtml === indexHtmlWithSSR) {
+    throw Error(`Could not add static html to ${indexHtmlBuildPath}`);
+  }
+
+  fs.writeFileSync(indexHtmlBuildPath, indexHtmlWithSSR);
 }
 
 const moduleUrl = process.argv[2];
+const minify = (process.argv[3] || "").toLowerCase().trim() === "--prod";
 
 if (!moduleUrl || !moduleUrl.startsWith("http")) {
   throw Error(
@@ -80,4 +98,4 @@ $ npx github:framer/bundler https://framer.com/m/framer/Site2.js\n\n`
   );
 }
 
-(async () => build(moduleUrl))();
+(async () => build(moduleUrl, minify))();
