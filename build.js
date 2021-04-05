@@ -37,7 +37,7 @@ async function buildScript(moduleUrl, outPath, minify = false) {
       "process.env.MODULE_URL": JSON.stringify(moduleUrl),
     },
     minify,
-    treeShaking: minify,
+    treeShaking: minify ? true : undefined,
   });
 }
 

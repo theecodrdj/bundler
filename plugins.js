@@ -1,9 +1,8 @@
+const fetch = require("node-fetch");
+
 exports.http = {
   name: "http",
   setup(build) {
-    let https = require("https");
-    let http = require("http");
-
     // Intercept import paths starting with "http:" and "https:" so
     // esbuild doesn't attempt to map them to a file system location.
     // Tag them with the "http-url" namespace to associate them with
@@ -28,37 +27,25 @@ exports.http = {
     // handle the example import from unpkg.com but in reality this
     // would probably need to be more complex.
     build.onLoad({ filter: /.*/, namespace: "http-url" }, async (args) => {
-      let contents = await new Promise((resolve, reject) => {
-        function fetch(url) {
-          console.log(`Downloading: ${url}`);
-          let lib = url.startsWith("https") ? https : http;
-          let req = lib
-            .get(url, (res) => {
-              if ([301, 302, 307].includes(res.statusCode)) {
-                fetch(new URL(res.headers.location, url).toString());
-                req.abort();
-              } else if (res.statusCode === 200) {
-                let chunks = [];
-                res.on("data", (chunk) => chunks.push(chunk));
-                res.on("end", () => {
-                  // This emulates the esm import.meta api that we need
-                  const contents = String(Buffer.concat(chunks)).replaceAll(
-                    "import.meta",
-                    JSON.stringify({ url: url })
-                  );
+      async function fetchUrl(url) {
+        console.log(`Downloading: ${url}`);
+        const response = await fetch(url);
 
-                  resolve(contents);
-                });
-              } else {
-                reject(
-                  new Error(`GET ${url} failed: status ${res.statusCode}`)
-                );
-              }
-            })
-            .on("error", reject);
+        if ([301, 302, 307].includes(response.status)) {
+          return fetchUrl(new URL(response.headers.location, url).toString());
+        } else if (response.status === 200) {
+          return response.text();
+          const body = await response.text();
+          return body.replaceAll("import.meta", JSON.stringify({ url: url }));
+        } else {
+          throw new Error(`GET ${url} failed: status ${response.status}`);
         }
-        fetch(args.path);
-      });
+      }
+
+      const url = args.path;
+      const contents = (await fetchUrl(url))
+        // We patch the contents with the esm import.meta api
+        .replaceAll("import.meta", JSON.stringify({ url }));
 
       return { contents };
     });
