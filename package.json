@@ -1,6 +1,6 @@
 {
   "bin": {
-    "awesome-command": "build.js"
+    "bundle": "build.js"
   },
   "dependencies": {
     "esbuild": "^0.11.5",
