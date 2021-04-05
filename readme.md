@@ -37,8 +37,7 @@ $ npx github:framer/bundler https://framer.com/m/framer/Site2.js --prod
 If you want to quickly deploy to Vercel you need an account and you can simply run:
 
 ```
-$ yarn add vercel
-$ ./node_modules/.bin/vercel
+$ npx vercel
 ```
 
 ### Known issues
