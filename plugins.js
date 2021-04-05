@@ -34,7 +34,8 @@ exports.http = {
         if ([301, 302, 307].includes(response.status)) {
           return fetchUrl(new URL(response.headers.location, url).toString());
         } else if (response.status === 200) {
-          return response.text();
+          // return response.text();
+          console.log("url", url);
           const body = await response.text();
           return body.replaceAll("import.meta", JSON.stringify({ url: url }));
         } else {
@@ -42,10 +43,10 @@ exports.http = {
         }
       }
 
-      const url = args.path;
-      const contents = (await fetchUrl(url))
-        // We patch the contents with the esm import.meta api
-        .replaceAll("import.meta", JSON.stringify({ url }));
+      // const url = args.path;
+      const contents = await fetchUrl(args.path);
+      // We patch the contents with the esm import.meta api
+      // .replaceAll("import.meta", JSON.stringify({ url }));
 
       return { contents };
     });
