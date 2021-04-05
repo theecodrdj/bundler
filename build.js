@@ -110,6 +110,8 @@ async function buildHtml(url) {
 }
 
 async function build() {
+  fs.rmdirSync(buildPath, { recursive: true });
+
   await buildScript(
     "https://framer.com/m/framer/Site.js@0.1.0",
     join(buildPath, "web.js")
@@ -122,15 +124,12 @@ async function build() {
   fs.copyFileSync(indexHtmlTemplatePath, indexHtmlBuildPath);
 
   const html = await buildHtml(`file://${indexHtmlBuildPath}`);
-
   const indexHtml = fs.readFileSync(indexHtmlBuildPath).toString();
+  const regex = /(<div id=.main.>)(.*)(<\/div>)/is;
 
   fs.writeFileSync(
     indexHtmlBuildPath,
-    indexHtml.replaceAll(
-      `<div id="main"></div>`,
-      `<div id="main">${html}</div>`
-    )
+    indexHtml.replace(regex, `<div id="main">${html}</div>`)
   );
 }
 
