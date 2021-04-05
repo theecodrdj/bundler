@@ -30,23 +30,17 @@ exports.http = {
       async function fetchUrl(url) {
         console.log(`Downloading: ${url}`);
         const response = await fetch(url);
-
-        if ([301, 302, 307].includes(response.status)) {
-          return fetchUrl(new URL(response.headers.location, url).toString());
-        } else if (response.status === 200) {
-          // return response.text();
-          console.log("url", url);
-          const body = await response.text();
-          return body.replaceAll("import.meta", JSON.stringify({ url: url }));
+        if (response.status === 200) {
+          return [response.url, await response.text()];
         } else {
           throw new Error(`GET ${url} failed: status ${response.status}`);
         }
       }
 
-      // const url = args.path;
-      const contents = await fetchUrl(args.path);
+      let [url, contents] = await fetchUrl(args.path);
+
       // We patch the contents with the esm import.meta api
-      // .replaceAll("import.meta", JSON.stringify({ url }));
+      contents = contents.replaceAll("import.meta", JSON.stringify({ url }));
 
       return { contents };
     });
