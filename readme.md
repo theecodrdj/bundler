@@ -1,5 +1,7 @@
 ## Framer Bundler
 
+Example: [module](https://framer.com/m/framer/Site2) → [site](https://my-framer-site-koenbok.vercel.app/)
+
 This is a static site generator for Framer components (which are es modules). It takes a single module as input and builds a static html site. It could work pretty nice with Netlify or Vercel. It uses `esbuild` for bundling and Playwright to generate the static html. Some other features:
 
 - Single index.html and web.js files

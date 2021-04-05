@@ -45,18 +45,18 @@ async function buildHtml(url) {
 }
 
 async function build(moduleUrl) {
+  // Clean out the old build folder if it's there
+  fs.rmdirSync(buildPath, { recursive: true });
+
+  // Build the main js using esbuild and bundle in a single script
+  await buildScript(moduleUrl, join(buildPath, "web.js"));
+
   // Make sure we at least have an index.html template that we can use (or tweak)
   if (!fs.existsSync(indexHtmlTemplatePath)) {
     fs.writeFileSync(indexHtmlTemplatePath, TEMPLATES["index.html"]);
   }
 
   fs.copyFileSync(indexHtmlTemplatePath, indexHtmlBuildPath);
-
-  // Clean out the old build folder if it's there
-  fs.rmdirSync(buildPath, { recursive: true });
-
-  // Build the main js using esbuild and bundle in a single script
-  await buildScript(moduleUrl, join(buildPath, "web.js"));
 
   // Build the static html to hydrate, this uses React.renderToString
   const html = await buildHtml(`file://${indexHtmlBuildPath}`);
