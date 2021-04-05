@@ -33,3 +33,4 @@ We definitely can fix most of these.
 - The `web.js` can get big, up to 2mb (360kb gzipped)
 - There is often a difference between the static and hydrated content
 - Fonts don't work, and maybe other assets don't work either
+- Images only load _after_ hydration
