@@ -94,7 +94,7 @@ const minify = (process.argv[3] || "").toLowerCase().trim() === "--prod";
 if (!moduleUrl || !moduleUrl.startsWith("http")) {
   throw Error(
     `Expected module url argument, something like: \n
-$ npx github:framer/bundler https://framer.com/m/framer/Site2.js\n\n`
+$ npx framer/bundler https://framer.com/m/framer/Site2.js\n`
   );
 }
 

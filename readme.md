@@ -21,7 +21,7 @@ $ cd ~/MyFramerSite
 Make sure you have the "Component Sharing" experiment enabled. Create a Smart Component, right click it in the components panel and select "Copy link".
 
 ```
-$ npx github:framer/bundler https://framer.com/m/Gallery-sVvV
+$ npx framer/bundler https://framer.com/m/Gallery-sVvV
 ```
 
 Open the `build` folder and drop the `index.html` file on your browser, or upload it somewhere.
@@ -33,7 +33,7 @@ You can edit the `index.html` file to customize your site output and the bundler
 You can build an optimized version (minified, tree shaked and production React) of your site using `--prod`.
 
 ```
-$ npx github:framer/bundler https://framer.com/m/Gallery-sVvV --prod
+$ npx framer/bundler https://framer.com/m/Gallery-sVvV --prod
 ```
 
 If you want to quickly deploy to Vercel you need an account and you can simply run:
