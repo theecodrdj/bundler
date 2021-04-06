@@ -5,33 +5,35 @@ import { renderToString } from "react-dom/server";
 
 window.React = React;
 window.Framer = Framer;
-window.__framer_importFromPackage = function () {
-  return "div";
+window.__framer_importFromPackage = function (name) {
+  return () =>
+    React.createElement("div", {}, `Package component not supported: ${name}`);
 };
 
-let App = require(process.env.MODULE_URL);
-
-if (App.default) {
-  App = App.default;
+function getMainElement() {
+  const el = document.getElementById("main");
+  if (!el) throw Error(`Could not find a <div> with id "main"`);
+  return el;
 }
 
-window.App = App;
-window.__export = () => renderToString(React.createElement(App));
+function getDefaultExport(lib) {
+  return lib.default ? lib.default : lib;
+}
 
-document.addEventListener("DOMContentLoaded", function () {
-  const el = document.getElementById("main");
+const App = getDefaultExport(require(process.env.MODULE_URL));
 
-  if (!el) {
-    throw Error(`Could not find a <div> with id "main"`);
-  }
+window.__export = () => {
+  const html = renderToString(React.createElement(App));
+  render(React.createElement(App), getMainElement());
 
-  if (!el.innerHTML) {
-    console.log("render");
-    render(React.createElement(App), el);
-  } else {
-    setTimeout(() => {
-      console.log("hydrate");
-      hydrate(React.createElement(App), el);
-    }, 0);
-  }
+  // Pick up the last inserted style after rendering
+  const stylesAfter = document.head.getElementsByTagName("style");
+  const style =
+    stylesAfter.length > 1 ? stylesAfter[stylesAfter.length - 1].innerText : "";
+
+  return [html, style];
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  hydrate(React.createElement(App), getMainElement());
 });

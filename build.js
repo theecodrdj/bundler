@@ -4,17 +4,15 @@ const { join } = require("path");
 const { webkit } = require("playwright");
 const { http } = require("./plugins");
 
-const TEMPLATES = {};
-
-TEMPLATES["index.html"] = `<!doctype html>
+const indexHtmlTemplate = `<!doctype html>
 <html>
   <head>
-    <style>body {margin: 0}</style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  </head>
+    <style>body {margin: 0}</style>
+    </head>
   <body>
-    <script src="./web.js"></script>
     <div id="main"></div>
+    <script src="./web.js"></script>  
   </body>
 </html>
 `;
@@ -48,12 +46,12 @@ async function buildHtml(url) {
   await page.goto(url);
   console.log("Page loaded...");
   // await page.screenshot({ path: join(buildPath, "site.png") });
-  const html = await page.evaluate(() => {
-    console.log(window.__export);
+  const [html, style] = await page.evaluate(() => {
     return window.__export();
   });
-  await browser.close();
-  return html;
+
+  browser.close();
+  return [html, style];
 }
 
 async function build(moduleUrl, minify = false) {
@@ -65,27 +63,29 @@ async function build(moduleUrl, minify = false) {
 
   // Make sure we at least have an index.html template that we can use (or tweak)
   if (!fs.existsSync(indexHtmlTemplatePath)) {
-    fs.writeFileSync(indexHtmlTemplatePath, TEMPLATES["index.html"]);
+    fs.writeFileSync(indexHtmlTemplatePath, indexHtmlTemplate);
   }
 
   fs.copyFileSync(indexHtmlTemplatePath, indexHtmlBuildPath);
 
   // Build the static html to hydrate, this uses React.renderToString
-  const html = await buildHtml(`file://${indexHtmlBuildPath}`);
+  const [html, style] = await buildHtml(`file://${indexHtmlBuildPath}`);
   const indexHtml = fs.readFileSync(indexHtmlBuildPath).toString();
 
-  // Replace the empty div in the hmtl file with the static html content
   const regex = /(<div id=.main.>)(.*)(<\/div>)/is;
-  const indexHtmlWithSSR = indexHtml.replace(
-    regex,
-    `<div id="main">${html}</div>`
-  );
+  const indexHtmlWithSSR = indexHtml
+    // Replace the empty div in the hmtl file with the static html content
+    .replace(regex, `<div id="main">${html}</div>`)
+    // Insert the dynamic styles into the head tag
+    .replace("</head>", `\n<style>\n${style}\n</style>\n</head>`);
 
   if (!html || indexHtml === indexHtmlWithSSR) {
     throw Error(`Could not add static html to ${indexHtmlBuildPath}`);
   }
 
   fs.writeFileSync(indexHtmlBuildPath, indexHtmlWithSSR);
+
+  console.log(`✅ Done: ${indexHtmlBuildPath.replace(__dirname, "")}`);
 }
 
 const moduleUrl = process.argv[2];

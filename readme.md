@@ -18,20 +18,22 @@ $ mkdir ~/MyFramerSite
 $ cd ~/MyFramerSite
 ```
 
-Create a Smart Component in Framer, click the share button and grab the actual `.js` url. You can find it under "Copy Import Statement". It looks something like `https://framer.com/m/framer/Site2.js`. Now run the Framer bundler from within your directory:
+Make sure you have the "Component Sharing" experiment enabled. Create a Smart Component, right click it in the components panel and select "Copy link".
 
 ```
-$ npx github:framer/bundler https://framer.com/m/framer/Site2.js
+$ npx github:framer/bundler https://framer.com/m/Gallery-sVvV
 ```
 
 Open the `build` folder and drop the `index.html` file on your browser, or upload it somewhere.
 
 ### Advanced options
 
+You can edit the `index.html` file to customize your site output and the bundler will respect your changes on next runs. Just make sure to always keep a `<div id="main"></div>" in there.
+
 You can build an optimized version (minified, tree shaked and production React) of your site using `--prod`.
 
 ```
-$ npx github:framer/bundler https://framer.com/m/framer/Site2.js --prod
+$ npx github:framer/bundler https://framer.com/m/Gallery-sVvV --prod
 ```
 
 If you want to quickly deploy to Vercel you need an account and you can simply run:

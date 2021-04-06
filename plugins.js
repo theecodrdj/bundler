@@ -28,10 +28,16 @@ exports.http = {
     // would probably need to be more complex.
     build.onLoad({ filter: /.*/, namespace: "http-url" }, async (args) => {
       async function fetchUrl(url) {
-        console.log(`Downloading: ${url}`);
         const response = await fetch(url);
         if (response.status === 200) {
-          return [response.url, await response.text()];
+          if (
+            !url.endsWith(".js") &&
+            response.headers.get("content-type").indexOf("text/html") !== -1
+          ) {
+            return fetchUrl(`${url}.js`);
+          } else {
+            return [response.url, await response.text()];
+          }
         } else {
           throw new Error(`GET ${url} failed: status ${response.status}`);
         }
