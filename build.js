@@ -56,7 +56,9 @@ async function buildHtml(url) {
 
 async function build(moduleUrl, minify = false) {
   // Clean out the old build folder if it's there
-  fs.rmdirSync(buildPath, { recursive: true });
+  if (fs.existsSync(buildPath)) {
+    fs.rmdirSync(buildPath, { recursive: true });
+  }
 
   // Build the main js using esbuild and bundle in a single script
   await buildScript(moduleUrl, join(buildPath, "web.js"), minify);
