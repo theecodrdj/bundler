@@ -45,6 +45,12 @@ exports.http = {
 
       let [url, contents] = await fetchUrl(args.path);
 
+      if (!contents) {
+        throw new Error(
+          `esbuild.http: no contents received for ${url} "${contents}"`
+        );
+      }
+
       // We patch the contents with the esm import.meta api
       contents = contents.replaceAll("import.meta", JSON.stringify({ url }));
 
