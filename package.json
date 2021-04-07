@@ -1,4 +1,5 @@
 {
+  "name": "framer-bundler",
   "bin": {
     "bundle": "build.js"
   },
