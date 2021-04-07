@@ -45,7 +45,7 @@ exports.http = {
 
       let [url, contents] = await fetchUrl(args.path);
 
-      if (!contents) {
+      if (!contents || typeof contents !== "string") {
         throw new Error(
           `esbuild.http: no contents received for ${url} "${contents}"`
         );
