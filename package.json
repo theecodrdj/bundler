@@ -13,7 +13,7 @@
     "react": "^16.12.0",
     "react-dom": "^16.12.0"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.js",
   "repository": "git@github.com:framer/bundler.git",
   "author": "Koen Bok <koen@framer.com>",
