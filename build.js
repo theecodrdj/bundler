@@ -1,18 +1,30 @@
 #!/usr/bin/env node
 const fs = require("fs");
 const { join } = require("path");
-const { webkit } = require("playwright");
 const { http } = require("./plugins");
+const { JSDOM, VirtualConsole } = require("jsdom");
 
 const indexHtmlTemplate = `<!doctype html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>body {margin: 0}</style>
-    </head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
   <body>
     <div id="main"></div>
-    <script src="./web.js"></script>  
+    <script src="./web.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        ReactDOM.hydrate(
+          React.createElement(window.App),
+          document.getElementById("main")
+        );
+      });
+    </script>
   </body>
 </html>
 `;
@@ -39,19 +51,34 @@ async function buildScript(moduleUrl, outPath, minify = false) {
   });
 }
 
-async function buildHtml(url) {
-  const browser = await webkit.launch();
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  await page.goto(url);
-  console.log("Page loaded...");
-  // await page.screenshot({ path: join(buildPath, "site.png") });
-  const [html, style] = await page.evaluate(() => {
-    return window.__export();
+function getHTML(script) {
+  const virtualConsole = new VirtualConsole();
+  const jsdom = new JSDOM("", { pretendToBeVisual: true, virtualConsole });
+  const { window } = jsdom;
+  const { document } = window;
+
+  Object.assign(global, {
+    window: window,
+    document: document,
+    navigator: window.navigator,
   });
 
-  browser.close();
-  return [html, style];
+  require(script);
+
+  const { App, React, ReactDOM } = window;
+  const html = ReactDOM.renderToString(React.createElement(App));
+
+  // Render the app once into the document so we can pick up the styles
+  ReactDOM.render(React.createElement(App), document.createElement("div"));
+
+  //   Pick up the last inserted style after rendering
+  const styles = Array.from(document.head.getElementsByTagName("style"))
+    .map((style) => style.textContent)
+    .join("\n");
+
+  window.close();
+
+  return [html, styles];
 }
 
 async function build(moduleUrl, minify = false) {
@@ -71,7 +98,7 @@ async function build(moduleUrl, minify = false) {
   fs.copyFileSync(indexHtmlTemplatePath, indexHtmlBuildPath);
 
   // Build the static html to hydrate, this uses React.renderToString
-  const [html, style] = await buildHtml(`file://${indexHtmlBuildPath}`);
+  const [html, style] = getHTML(`${buildPath}/web.js`);
   const indexHtml = fs.readFileSync(indexHtmlBuildPath).toString();
 
   const regex = /(<div id=.main.>)(.*)(<\/div>)/is;
@@ -88,16 +115,19 @@ async function build(moduleUrl, minify = false) {
   fs.writeFileSync(indexHtmlBuildPath, indexHtmlWithSSR);
 
   console.log(`✅ Done: ${indexHtmlBuildPath.replace(__dirname, "")}`);
+
+  // We need a manual exit to make sure jsdom stops if it has timers running
+  process.exit();
 }
 
 const moduleUrl = process.argv[2];
 const minify = (process.argv[3] || "").toLowerCase().trim() === "--prod";
 
 if (!moduleUrl || !moduleUrl.startsWith("http")) {
-  throw Error(
-    `Expected module url argument, something like: \n
-$ npx framer/bundler https://framer.com/m/framer/Site2.js\n`
+  console.log(
+    `⚠️ Expected module url argument, something like: \n$ npx framer/bundler https://framer.com/m/framer/Site2.js`
   );
+  process.exit();
 }
 
 (async () => build(moduleUrl, minify))();
