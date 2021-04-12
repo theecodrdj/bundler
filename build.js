@@ -129,7 +129,10 @@ async function build(moduleUrl, minify = false) {
   write(scriptBuildPath, script);
 
   const template = fs.readFileSync(indexHtmlTemplatePath).toString();
-  const html = getHTML(template, getStatic(`./build/${scriptName}.js`));
+  const html = getHTML(
+    template,
+    getStatic(join(buildPath, `${scriptName}.js`))
+  );
   write(indexHtmlBuildPath, html);
 
   console.log(`^^^ Ignore any react or svg errors here for now`);
