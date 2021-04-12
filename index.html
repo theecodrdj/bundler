@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main"></div>
+    <script src="./web.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        ReactDOM.hydrate(
+          React.createElement(window.App),
+          document.getElementById("main")
+        );
+      });
+    </script>
+  </body>
+</html>
