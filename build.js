@@ -2,8 +2,10 @@
 const fs = require("fs");
 const { join } = require("path");
 const { http } = require("./plugins");
-const { JSDOM, VirtualConsole } = require("jsdom");
+const { JSDOM } = require("jsdom");
+const esbuild = require("esbuild");
 
+const scriptName = "web";
 const indexHtmlTemplate = `<!doctype html>
 <html>
   <head>
@@ -16,7 +18,7 @@ const indexHtmlTemplate = `<!doctype html>
   </head>
   <body>
     <div id="main"></div>
-    <script src="./web.js"></script>
+    <script src="./${scriptName}.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         ReactDOM.hydrate(
@@ -34,11 +36,11 @@ const buildPath = join(projectPath, "build");
 const indexHtmlTemplatePath = join(projectPath, "index.html");
 const indexHtmlBuildPath = join(buildPath, "index.html");
 
-async function buildScript(moduleUrl, outPath, minify = false) {
-  return require("esbuild").build({
+async function getScript(moduleUrl, minify = false) {
+  const build = await esbuild.build({
+    write: false,
     entryPoints: [join(__dirname, "web.js")],
     bundle: true,
-    outfile: outPath,
     plugins: [http],
     define: {
       "process.env.NODE_ENV": JSON.stringify(
@@ -49,11 +51,14 @@ async function buildScript(moduleUrl, outPath, minify = false) {
     minify,
     treeShaking: minify ? true : undefined,
   });
+
+  return build.outputFiles[0].text;
 }
 
-function getHTML(script) {
-  const virtualConsole = new VirtualConsole();
-  const jsdom = new JSDOM("", { pretendToBeVisual: true, virtualConsole });
+function getStatic(script) {
+  // const virtualConsole = new VirtualConsole();
+  // virtualConsole.sendTo(console, { omitJSDOMErrors: true });
+  const jsdom = new JSDOM("", { pretendToBeVisual: true });
   const { window } = jsdom;
   const { document } = window;
 
@@ -81,40 +86,54 @@ function getHTML(script) {
   return [html, styles];
 }
 
-async function build(moduleUrl, minify = false) {
-  // Clean out the old build folder if it's there
-  if (fs.existsSync(buildPath)) {
-    fs.rmdirSync(buildPath, { recursive: true });
-  }
-
-  // Build the main js using esbuild and bundle in a single script
-  await buildScript(moduleUrl, join(buildPath, "web.js"), minify);
-
-  // Make sure we at least have an index.html template that we can use (or tweak)
-  if (!fs.existsSync(indexHtmlTemplatePath)) {
-    fs.writeFileSync(indexHtmlTemplatePath, indexHtmlTemplate);
-  }
-
-  fs.copyFileSync(indexHtmlTemplatePath, indexHtmlBuildPath);
-
-  // Build the static html to hydrate, this uses React.renderToString
-  const [html, style] = getHTML(`${buildPath}/web.js`);
-  const indexHtml = fs.readFileSync(indexHtmlBuildPath).toString();
-
+function getHTML(template, [html, styles]) {
   const regex = /(<div id=.main.>)(.*)(<\/div>)/is;
-  const indexHtmlWithSSR = indexHtml
+  const result = template
     // Replace the empty div in the hmtl file with the static html content
     .replace(regex, `<div id="main">${html}</div>`)
     // Insert the dynamic styles into the head tag
-    .replace("</head>", `\n<style>\n${style}\n</style>\n</head>`);
+    .replace("</head>", `\n<style>\n${styles}\n</style>\n</head>`);
 
-  if (!html || indexHtml === indexHtmlWithSSR) {
-    throw Error(`Could not add static html to ${indexHtmlBuildPath}`);
+  if (!html || template === result) {
+    throw Error(`Could not add static html to \n${html}`);
   }
 
-  fs.writeFileSync(indexHtmlBuildPath, indexHtmlWithSSR);
+  return result;
+}
 
-  console.log(`✅ Done: ${indexHtmlBuildPath.replace(__dirname, "")}`);
+function rm(path) {
+  if (fs.existsSync(path)) {
+    fs.rmdirSync(path, { recursive: true });
+  }
+}
+
+function write(path, contents, overwrite = false) {
+  if (fs.existsSync(path)) {
+    if (!overwrite) return false;
+    if (fs.file) rm(path);
+  }
+  fs.writeFileSync(path, contents);
+}
+
+async function build(moduleUrl, minify = false) {
+  // Clean out the old build folder if it's there
+  rm(buildPath);
+  fs.mkdirSync(buildPath);
+
+  write(indexHtmlTemplatePath, indexHtmlTemplate);
+
+  // Build the main js using esbuild and bundle in a single script
+  const scriptBuildPath = join(buildPath, `${scriptName}.js`);
+  const script = await getScript(moduleUrl, minify);
+
+  write(scriptBuildPath, script);
+
+  const template = fs.readFileSync(indexHtmlTemplatePath).toString();
+  const html = getHTML(template, getStatic(`./build/${scriptName}`));
+  write(indexHtmlBuildPath, html);
+
+  console.log(`^^^ Ignore any react or svg errors here for now`);
+  console.log(`✅ Done: ./build`);
 
   // We need a manual exit to make sure jsdom stops if it has timers running
   process.exit();
