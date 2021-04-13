@@ -1,5 +1,9 @@
 const fetch = require("node-fetch");
 
+function replaceAll(str, find, replace) {
+  return str.replace(new RegExp(find, "g"), replace);
+}
+
 exports.http = {
   name: "http",
   setup(build) {
@@ -52,7 +56,7 @@ exports.http = {
       }
 
       // We patch the contents with the esm import.meta api
-      contents = contents.replaceAll("import.meta", JSON.stringify({ url }));
+      contents = replaceAll(contents, "import.meta", JSON.stringify({ url }));
 
       return { contents };
     });
