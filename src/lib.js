@@ -37,6 +37,10 @@ function getStatic(script) {
     navigator: window.navigator,
   });
 
+  for (const key of ["Image", "HTMLElement"]) {
+    global[key] = window[key];
+  }
+
   require(script);
 
   const { App, React, ReactDOM } = window;
