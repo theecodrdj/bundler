@@ -28,7 +28,7 @@ Open the `build` folder and drop the `index.html` file on your browser, or uploa
 
 ### Advanced options
 
-You can edit the `index.html` file to customize your site output and the bundler will respect your changes on next runs. Just make sure to always keep a `<div id="main"></div>" in there.
+You can edit the `index.html` file to customize your site output and the bundler will respect your changes on next runs. Just make sure to always keep a `<div id="main"></div>` in there.
 
 You can build an optimized version (minified, tree shaked and production React) of your site using `--prod`.
 
