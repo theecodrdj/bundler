@@ -13,7 +13,7 @@
     "react-dom": "16.12.0",
     "vercel": "^21.3.3"
   },
-  "version": "2.2.0",
+  "version": "2.3.0",
   "main": "index.js",
   "repository": "git@github.com:framer/bundler.git",
   "author": "Koen Bok <koen@framer.com>",
