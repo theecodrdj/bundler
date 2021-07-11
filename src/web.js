@@ -1,7 +1,25 @@
-import Framer from "framer";
+const framerLibraryPath = process.env.FRAMER_LIBRARY_PATH
+  ? process.env.FRAMER_LIBRARY_PATH
+  : "framer";
+
+// See if we have an external Framer library defined
+const Framer = require("framer");
+
+console.log("Framer", framerLibraryPath, Framer, Framer.React);
+
+// import Framer from "framer";
 import React from "react";
 import ReactDOM from "react-dom";
 import { renderToString } from "react-dom/server";
+
+// const framerLibraryPath = process.env.FRAMER_LIBRARY_PATH
+//   ? process.env.FRAMER_LIBRARY_PATH
+//   : "framer";
+
+// // See if we have an external Framer library defined
+// const Framer = require(framerLibraryPath);
+
+// console.log("framerLibraryPath", framerLibraryPath, Framer);
 
 ReactDOM.renderToString = renderToString;
 

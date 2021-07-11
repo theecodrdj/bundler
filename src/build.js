@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const fs = require("fs");
 const { join } = require("path");
-const { getScript, getStatic, getHTML } = require("./lib");
+const { getScript, getStatic, getPageHTML } = require("./lib");
 
 const scriptName = "web";
 const indexHtmlTemplate = `<!doctype html>
@@ -57,12 +57,17 @@ async function build(moduleUrl, minify = false) {
 
   // Build the main js using esbuild and bundle in a single script
   const scriptBuildPath = join(buildPath, `${scriptName}.js`);
-  const script = await getScript(moduleUrl, minify);
+  const script = await getScript(
+    moduleUrl,
+    minify,
+    (framerLibraryPath =
+      "/Users/koen/Documents/Projects/FramerStudio/src/library/build/framer.js")
+  );
 
   write(scriptBuildPath, script);
 
   const template = fs.readFileSync(indexHtmlTemplatePath).toString();
-  const html = getHTML(
+  const html = getPageHTML(
     template,
     getStatic(join(buildPath, `${scriptName}.js`))
   );

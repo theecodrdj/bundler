@@ -42,6 +42,14 @@ If you want to quickly deploy to Vercel you need an account and you can simply r
 $ npx vercel
 ```
 
+### Framer Library
+
+If you want to develop against a local Framer Library, you can simply use yarn:
+
+```
+yarn add ../FramerStudio/src/library
+```
+
 ### Known issues
 
 I keep these in a [Paper Document](https://paper.dropbox.com/doc/Static-Framer-Site-Findings-OBXBx4Jt19J29SfrQlgRC).
