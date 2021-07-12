@@ -1,17 +1,29 @@
 #!/usr/bin/env node
-const fs = require("fs");
-const { join } = require("path");
-const { getScript, getStatic, getHTML } = require("./lib");
+import fs from "fs"
+import { join } from "path";
+import { getScript, getStatic, getHTML } from "./lib.js"
 
 const scriptName = "web";
 const indexHtmlTemplate = `<!doctype html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
-      body {
+        html, body, #main {
+        height: 100%;
         margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
+      * {
+        box-sizing: inherit;
+      }
+
+      @font-face { src: url("https://framerusercontent.com/modules/2jGzqJXvGDEMb7VkiBXQ/Bv0k4Y2l6czijl8MehOV/assets/lYafHVZwqgZrS8IJan5h2BTNNK0.ttf"); font-family: "GT Walsheim Medium" }
+      @font-face { src: url("https://framerusercontent.com/modules/2jGzqJXvGDEMb7VkiBXQ/Bv0k4Y2l6czijl8MehOV/assets/BEQRVDgs6J93DgS3UCYfVmYVd2E.ttf"); font-family: "GT Walsheim Bold" }
+      @font-face { src: url("https://framerusercontent.com/modules/2jGzqJXvGDEMb7VkiBXQ/Bv0k4Y2l6czijl8MehOV/assets/8TMEc25pgQJN4vUT0GWMDu1xY.ttf"); font-family: "GT Walsheim Regular" }
+      @font-face { src: url("https://framerusercontent.com/modules/2jGzqJXvGDEMb7VkiBXQ/Bv0k4Y2l6czijl8MehOV/assets/mRihjkkGRh1cPifFI5NK2daGo.ttf"); font-family: "GT Walsheim Regular Oblique" }
     </style>
   </head>
   <body>
@@ -19,10 +31,12 @@ const indexHtmlTemplate = `<!doctype html>
     <script src="./${scriptName}.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
+        Framer.MainLoop.start() // Required by DataObserver
         ReactDOM.hydrate(
-          React.createElement(window.App),
-          document.getElementById("main")
-        );
+            React.createElement(window.App),
+            document.getElementById("main")
+        )
+
       });
     </script>
   </body>
@@ -48,24 +62,36 @@ function write(path, contents, overwrite = false) {
   fs.writeFileSync(path, contents);
 }
 
-async function build(moduleUrl, minify = false) {
+async function build(moduleUrl, importMap, minify = false) {
   // Clean out the old build folder if it's there
   rm(buildPath);
   fs.mkdirSync(buildPath);
 
-  write(indexHtmlTemplatePath, indexHtmlTemplate);
+  write(indexHtmlTemplatePath, indexHtmlTemplate, true);
 
   // Build the main js using esbuild and bundle in a single script
   const scriptBuildPath = join(buildPath, `${scriptName}.js`);
-  const script = await getScript(moduleUrl, minify);
+  const script = await getScript(moduleUrl, importMap, minify);
 
   write(scriptBuildPath, script);
 
   const template = fs.readFileSync(indexHtmlTemplatePath).toString();
-  const html = getHTML(
-    template,
-    getStatic(join(buildPath, `${scriptName}.js`))
-  );
+
+  let html = template;
+
+  try {
+    html = getHTML(
+      template,
+      await getStatic(join(buildPath, `${scriptName}.js`))
+    );
+  } catch (error) {
+    console.log("*** Could not render html for ssr\n", error)
+  }
+
+
+
+  // const html = template
+
   write(indexHtmlBuildPath, html);
 
   console.log(`^^^ Ignore any react or svg errors here for now`);
@@ -85,4 +111,24 @@ if (!moduleUrl || !moduleUrl.startsWith("http")) {
   process.exit();
 }
 
-(async () => build(moduleUrl, minify))();
+
+const importMap = {
+  "imports": {
+    "framer": "https://app.framerstatic.com/library.5YWWZ3RV.js",
+    "framer-motion": "https://app.framerstatic.com/framer-motion-esm-shim.DAYYF345.js",
+    "react": "https://ga.jspm.io/npm:react@17.0.2/index.js",
+    "react-dom": "https://ga.jspm.io/npm:react-dom@17.0.2/index.js",
+    "react/jsx-runtime": "https://ga.jspm.io/npm:react@17.0.2/jsx-runtime.js",
+    "framer:screens/ZyRmUVn6L": "https://framerusercontent.com/modules/irP4bhwiKwthkywwmbLi/wPA3evQ7JiXyxo4GG5nB/ZyRmUVn6L.js",
+    "framer:screens/sCioVo_1D": "https://framerusercontent.com/modules/NzE2lus9FQD4Uzu5lcvh/QK2OpbFRXdGS20gjrR2i/sCioVo_1D.js",
+    "framer:screens/AhtKjy2EC": "https://framerusercontent.com/modules/PrAEpiosXTTxJQMePm1Z/PjGWJq6CC2nsoLmGygcg/AhtKjy2EC.js"
+  },
+  "scopes": {
+    "https://ga.jspm.io/": {
+      "object-assign": "https://ga.jspm.io/npm:object-assign@4.1.1/index.js",
+      "scheduler": "https://ga.jspm.io/npm:scheduler@0.20.2/index.js"
+    }
+  }
+}
+
+build(moduleUrl, importMap, minify)
